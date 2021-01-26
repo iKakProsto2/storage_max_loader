@@ -1,9 +1,8 @@
-use std::fs::File;
 use std::io::Write;
-use std::os::raw::c_char;
 use std::collections::HashMap;
 use winapi::um::fileapi::{GetLogicalDrives, GetDiskFreeSpaceA};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 const KB_4_DATA: [u8; 4096] = [255u8; 4096];
 const KB_1024_DATA: [u8; 1_048_576] = [255u8; 1_048_576];
 static GB: u64 = 1_073_741_824;
@@ -11,29 +10,29 @@ static GB_70: u64 = GB * 70;
 const DRIVE_LETTERS: [&str; 26] = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
 
 fn main() {
+    println!("By Adatan current version: {}", VERSION);
     let mut drive_letters = HashMap::new();
     let mut count = 0u8;
-    if let mut f = unsafe { GetLogicalDrives() } {
-        if f != 0 {
-            println!("Список доступных дисков на выбранном устройстве:");
-            for i in 0usize..32 {
-                if f % 2 == 1 {
-                    count += 1;
-                    let drive_letter = format!(r"{}:\", DRIVE_LETTERS[i]);
-                    println!("{}) {}", count, &drive_letter);
-                    drive_letters.insert(count, drive_letter);
-                }
-                f /= 2;
+    let mut f = unsafe { GetLogicalDrives() };
+    if f != 0 {
+        println!("Список доступных дисков на выбранном устройстве:");
+        for i in 0usize..32 {
+            if f % 2 == 1 {
+                count += 1;
+                let drive_letter = format!(r"{}:\", DRIVE_LETTERS[i]);
+                println!("{}) {}", count, &drive_letter);
+                drive_letters.insert(count, drive_letter);
             }
+            f /= 2;
         }
     }
-    let mut drive_letter = drive_letters[&get_input("Выберите номер диска для заполнения: ").parse::<u8>().unwrap()].clone();
+    let drive_letter = drive_letters[&get_input("Выберите номер диска для заполнения: ").parse::<u8>().unwrap()].clone();
     println!("Выбран диск: {}", drive_letter);
     let mut sectors_per_cluster = 0u32;
     let mut bytes_per_sector = 0u32;
     let mut number_of_free_cluster = 0u32;
     let mut total_number_of_cluster = 0u32;
-    if unsafe { GetDiskFreeSpaceA(std::ffi::CString::new(drive_letter.clone()).unwrap().as_ptr(), &mut sectors_per_cluster, &mut bytes_per_sector, &mut number_of_free_cluster, &mut total_number_of_cluster) } == 1 {
+    if unsafe { GetDiskFreeSpaceA(#[allow(temporary_cstring_as_ptr)] std::ffi::CString::new(drive_letter.clone()).unwrap().as_ptr(), &mut sectors_per_cluster, &mut bytes_per_sector, &mut number_of_free_cluster, &mut total_number_of_cluster) } == 1 {
         let cluster_size = bytes_per_sector as u64 * sectors_per_cluster  as u64;
         let total_disk_space = cluster_size  as u64 * total_number_of_cluster  as u64;
         let free_disk_space = cluster_size  as u64 * number_of_free_cluster  as u64;
@@ -54,7 +53,7 @@ fn main() {
         let mut total_write_size = 0u64;
         println!("Начинаю заполнение до 70 гб свободного остатка...");
         let start = get_unix_timestamp();
-        while free_disk_space - total_write_size > GB * 70 {
+        while free_disk_space - total_write_size > GB_70 {
             let mut file_size = 0u64;
             let mut file_path = file_path.clone();
             file_path.push_str(get_unix_milli_timestamp().to_string().as_str());
