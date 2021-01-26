@@ -1,0 +1,18 @@
+[package]
+name = "storage_max_loader"
+version = "0.1.0"
+authors = ["adatan <adatan@protonmail.com>"]
+edition = "2018"
+
+[profile.release]
+codegen-units = 3
+lto = "fat"
+panic = "abort"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[dependencies.winapi]
+version = "0.3.9"
+features = [ "fileapi" ]
