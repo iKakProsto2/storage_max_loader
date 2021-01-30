@@ -4,6 +4,7 @@ use std::fs::{create_dir, remove_dir_all};
 use std::fs::File;
 use std::ffi::CString;
 use winapi::um::fileapi::{GetLogicalDrives, GetDiskFreeSpaceA};
+use dirs::desktop_dir;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[allow(non_upper_case_globals)]
@@ -37,12 +38,18 @@ fn main() {
         Ok(drive_number) => drive_letters.get(&drive_number).unwrap().clone(),
         Err(_) => format!(r"{}:\", drive_letter.to_uppercase())
     };
-    println!("Выбран диск: {}", drive_letter);
+    println!("Выбран диск: {}", drive_letter.clone());
+    let desktop_dir = desktop_dir().unwrap();
+    let file_path = if desktop_dir.starts_with(drive_letter.clone()) {
+        format!(r"{}\garbage\", desktop_dir.to_str().unwrap())
+    } else {
+        format!(r"{}garbage\", drive_letter.clone())
+    };
     let mut sectors_per_cluster = 0u32;
     let mut bytes_per_sector = 0u32;
     let mut number_of_free_cluster = 0u32;
     let mut total_number_of_cluster = 0u32;
-    if unsafe { GetDiskFreeSpaceA(#[allow(temporary_cstring_as_ptr)] CString::new(drive_letter.clone()).unwrap().as_ptr(), &mut sectors_per_cluster, &mut bytes_per_sector, &mut number_of_free_cluster, &mut total_number_of_cluster) } != 1 {
+    if unsafe { GetDiskFreeSpaceA(#[allow(temporary_cstring_as_ptr)] CString::new(drive_letter).unwrap().as_ptr(), &mut sectors_per_cluster, &mut bytes_per_sector, &mut number_of_free_cluster, &mut total_number_of_cluster) } != 1 {
         panic!("err: winapi func call GetDiskFreeSpaceA is finished not successfully")
     }
     let cluster_size = bytes_per_sector as u64 * sectors_per_cluster as u64;
@@ -67,7 +74,6 @@ fn main() {
         HowToFill::WriteByChunk => "Какого размера будет чанк для заполнения каждого файла?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): "
     });
     let garbage_data = vec![0u8; garbage_file_size as usize];
-    let file_path = format!(r"{}garbage\", drive_letter);
     println!("Пытаюсь создать папку для хранения бессмысленных данных...");
     if let Err(_) = create_dir(file_path.clone()) {
         println!("Возможно, папка с файлами уже существует, пробуем удалить папку со всеми файлами...");
@@ -78,10 +84,10 @@ fn main() {
         }
     };
     let mut count = 0u64;
-    let work_time = match how_to_fill {
+    let start = get_unix_timestamp();
+    match how_to_fill {
         HowToFill::WriteByChunk => {
             let mut total_wrote_size = 0u64;
-            let start = get_unix_timestamp();
             while total_wrote_size < total_garbage_size {
                 let mut file_size = 0u64;
                 let mut file_path = file_path.clone();
@@ -96,28 +102,26 @@ fn main() {
                         break;
                     }
                 }
+                println!("written {} from {}", file_size, total_garbage_size);
                 total_wrote_size += file_size;
                 count += 1;
             }
-            let end = get_unix_timestamp();
-            end - start
         },
         HowToFill::WriteAll => {
             let mut total_wrote_size = 0u64;
-            let start = get_unix_timestamp();
             while total_wrote_size < total_garbage_size {
                 let mut file_path = file_path.clone();
                 file_path.push_str(count.to_string().as_str());
                 let mut file = File::create(file_path).unwrap();
                 file.write_all(&garbage_data).unwrap();
+                println!("written {} from {}", garbage_file_size, total_garbage_size);
                 total_wrote_size += garbage_file_size;
                 count += 1;
             }
-            let end = get_unix_timestamp();
-            end - start
         },
     };
-    println!("Заполнение длилось {} сек.", work_time);
+    let end = get_unix_timestamp();
+    println!("Заполнение длилось {} сек.", end - start);
     pause();
 }
 

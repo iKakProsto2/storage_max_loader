@@ -1,6 +1,6 @@
 [package]
 name = "storage_max_loader"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["adatan"]
 edition = "2018"
 
@@ -12,6 +12,7 @@ panic = "abort"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+dirs = "3.0.1"
 
 [dependencies.winapi]
 version = "0.3.9"
