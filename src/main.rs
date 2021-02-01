@@ -33,6 +33,7 @@ fn main() {
         }
         f /= 2;
     }
+    count = 0;
     let mut drive_letter = get_input("Выберите номер диска или букву диска (пример: С) для заполнения: ");
     drive_letter = match drive_letter.parse::<u8>() {
         Ok(drive_number) => drive_letters.get(&drive_number).unwrap().clone(),
@@ -62,14 +63,14 @@ fn main() {
     println!("Кол-во байтов на сектор: {} B", bytes_per_sector);
     println!("Кол-во свободных кластеров: {}", number_of_free_cluster);
     println!("Кол-во всех кластеров: {}", total_number_of_cluster);
-    let total_garbage_size = get_bytes_size("Введите какой объем диска нужно заполнить(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ");
+    let (total_garbage_size, kind) = get_bytes_size("Введите какой объем диска нужно заполнить(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ");
     let how_to_fill = match get_input("1) Делать записи по чанкам\n2) Записывать сразу весь файл").as_str() {
         "1" => HowToFill::WriteByChunk,
         "2" => HowToFill::WriteAll,
         _ => panic!("err: unknown method of fill")
     };
 
-    let garbage_file_size = get_bytes_size( match how_to_fill {
+    let (garbage_file_size, _) = get_bytes_size( match how_to_fill {
         HowToFill::WriteAll => "Какого размера будет каждый файл?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ",
         HowToFill::WriteByChunk => "Какого размера будет чанк для заполнения каждого файла?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): "
     });
@@ -83,11 +84,12 @@ fn main() {
             println!("Папка создана")
         }
     };
-    let mut count = 0u64;
+    let coefficient = get_coefficient(&kind);
+    let mut stdout = std::io::stdout();
     let start = get_unix_timestamp();
+    let mut total_wrote_size = 0u64;
     match how_to_fill {
         HowToFill::WriteByChunk => {
-            let mut total_wrote_size = 0u64;
             while total_wrote_size < total_garbage_size {
                 let mut file_size = 0u64;
                 let mut file_path = file_path.clone();
@@ -102,20 +104,21 @@ fn main() {
                         break;
                     }
                 }
-                println!("written {} from {}", file_size, total_garbage_size);
                 total_wrote_size += file_size;
+                print!("\r{}/{} {}", total_wrote_size / coefficient, total_garbage_size / coefficient, &kind);
+                stdout.flush().unwrap();
                 count += 1;
             }
         },
         HowToFill::WriteAll => {
-            let mut total_wrote_size = 0u64;
             while total_wrote_size < total_garbage_size {
                 let mut file_path = file_path.clone();
                 file_path.push_str(count.to_string().as_str());
                 let mut file = File::create(file_path).unwrap();
                 file.write_all(&garbage_data).unwrap();
-                println!("written {} from {}", garbage_file_size, total_garbage_size);
                 total_wrote_size += garbage_file_size;
+                print!("\r{}/{} {}", total_wrote_size / coefficient, total_garbage_size / coefficient, &kind);
+                stdout.flush().unwrap();
                 count += 1;
             }
         },
@@ -154,7 +157,7 @@ fn get_input(prompt: &str) -> String {
     input.trim().to_string()
 }
 
-fn get_bytes_size(prompt: &str) -> u64 {
+fn get_bytes_size(prompt: &str) -> (u64, String) {
     let chunk_size = get_input(prompt);
     let mut number = String::new();
     let mut kind = String::new();
@@ -165,9 +168,14 @@ fn get_bytes_size(prompt: &str) -> u64 {
             kind.push(c)
         }
     }
-    let kind = kind.trim();
+    let kind = kind.trim().to_uppercase();
     let number = number.trim().parse::<u64>().unwrap();
-    let coefficient: u64 = match kind.to_uppercase().as_str() {
+    let coefficient = get_coefficient(&kind);
+    (number * coefficient, kind)
+}
+
+fn get_coefficient(kind: &str) -> u64 {
+    match kind.into() {
         "B" | "Б" => 2u64.pow(0),
         "KIB" | "КИБ" => 2u64.pow(10),
         "MIB" | "МИБ" => 2u64.pow(20),
@@ -176,6 +184,5 @@ fn get_bytes_size(prompt: &str) -> u64 {
         "MB" | "МБ" => 10u64.pow(6),
         "GB" | "ГБ" => 10u64.pow(9),
         _ => panic!("unknown")
-    };
-    number * coefficient
+    }
 }
