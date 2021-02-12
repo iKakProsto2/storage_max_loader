@@ -74,6 +74,9 @@ fn main() {
         HowToFill::WriteAll => "Какого размера будет каждый файл?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ",
         HowToFill::WriteByChunk => "Какого размера будет чанк для заполнения каждого файла?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): "
     });
+    if total_garbage_size % garbage_file_size != 0 {
+        panic!("Ошибка: невозможно заполнения без остатка");
+    }
     let garbage_data = vec![0u8; garbage_file_size as usize];
     println!("Пытаюсь создать папку для хранения бессмысленных данных...");
     if let Err(_) = create_dir(file_path.clone()) {
@@ -124,7 +127,7 @@ fn main() {
         },
     };
     let end = get_unix_timestamp();
-    println!("Заполнение длилось {} сек.", end - start);
+    println!("\r\nЗаполнение длилось {} сек.", end - start);
     pause();
 }
 
