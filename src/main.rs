@@ -18,7 +18,7 @@ enum HowToFill {
 fn main() {
     println!("By Adatan. current version: {}", VERSION);
     let mut drive_letters = HashMap::new();
-    let mut count = 0u8;
+    let mut count = 0usize;
     let mut f = unsafe { GetLogicalDrives() };
     if f == 0 {
         panic!("Не обнаружено дисков");
@@ -69,12 +69,13 @@ fn main() {
         "2" => HowToFill::WriteAll,
         _ => panic!("err: unknown method of fill")
     };
+    let coefficient = get_coefficient(&kind);
 
-    let (garbage_file_size, _) = get_bytes_size( match how_to_fill {
-        HowToFill::WriteAll => "Какого размера будет каждый файл?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ",
-        HowToFill::WriteByChunk => "Какого размера будет чанк для заполнения каждого файла?(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): "
-    });
-    if total_garbage_size % garbage_file_size != 0 {
+    let garbage_file_size = match how_to_fill {
+        HowToFill::WriteAll => get_input(format!("По сколько {} будет каждый файл?", &kind).as_str()),
+        HowToFill::WriteByChunk => get_input(format!("По сколько {} будет каждый чанк для заполнения каждого файла?", &kind).as_str())
+    }.parse::<u64>().unwrap();
+    if total_garbage_size % (garbage_file_size * coefficient) != 0 {
         panic!("Ошибка: невозможно заполнения без остатка");
     }
     let garbage_data = vec![0u8; garbage_file_size as usize];
@@ -87,7 +88,6 @@ fn main() {
             println!("Папка создана")
         }
     };
-    let coefficient = get_coefficient(&kind);
     let mut stdout = std::io::stdout();
     let start = get_unix_timestamp();
     let mut total_wrote_size = 0u64;
