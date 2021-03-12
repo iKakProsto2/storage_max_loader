@@ -35,7 +35,7 @@ fn main() {
     }
     count = 0;
     let mut drive_letter = get_input("Выберите номер диска или букву диска (пример: С) для заполнения: ");
-    drive_letter = match drive_letter.parse::<u8>() {
+    drive_letter = match drive_letter.parse::<usize>() {
         Ok(drive_number) => drive_letters.get(&drive_number).unwrap().clone(),
         Err(_) => format!(r"{}:\", drive_letter.to_uppercase())
     };
