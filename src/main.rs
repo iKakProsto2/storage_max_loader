@@ -64,6 +64,9 @@ fn main() {
     println!("Кол-во свободных кластеров: {}", number_of_free_cluster);
     println!("Кол-во всех кластеров: {}", total_number_of_cluster);
     let (total_garbage_size, kind) = get_bytes_size("Введите какой объем диска нужно заполнить(пример: 1024Б, 1024KB, 1024MB, 1024GB, 1024KiB, 1024MiB, 1024GiB): ");
+    if total_garbage_size > free_disk_space {
+        panic!("err: trying to fill more than available ");
+    }
     let how_to_fill = match get_input("1) Делать записи по чанкам\n2) Записывать сразу весь файл").as_str() {
         "1" => HowToFill::WriteByChunk,
         "2" => HowToFill::WriteAll,
@@ -71,11 +74,12 @@ fn main() {
     };
     let coefficient = get_coefficient(&kind);
 
-    let garbage_file_size = match how_to_fill {
+    let mut garbage_file_size = match how_to_fill {
         HowToFill::WriteAll => get_input(format!("По сколько {} будет каждый файл?", &kind).as_str()),
         HowToFill::WriteByChunk => get_input(format!("По сколько {} будет каждый чанк для заполнения каждого файла?", &kind).as_str())
     }.parse::<u64>().unwrap();
-    if total_garbage_size % (garbage_file_size * coefficient) != 0 {
+    garbage_file_size *= coefficient;
+    if total_garbage_size % garbage_file_size != 0 {
         panic!("Ошибка: невозможно заполнения без остатка");
     }
     let garbage_data = vec![0u8; garbage_file_size as usize];
