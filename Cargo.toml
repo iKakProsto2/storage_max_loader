@@ -1,19 +1,21 @@
 [package]
 name = "storage_max_loader"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["adatan"]
 edition = "2018"
 
 [profile.release]
-codegen-units = 3
+opt-level = 3
+codegen-units = 1
 lto = "fat"
 panic = "abort"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dirs = "3.0.1"
+chrono = "^0.4"
+dirs = "^3"
 
 [dependencies.winapi]
-version = "0.3.9"
+version = "^0.3"
 features = [ "fileapi" ]
