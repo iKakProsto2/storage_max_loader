@@ -3,7 +3,7 @@ use std::{
     ffi::CString,
     fs::{File, create_dir, remove_dir_all},
     io::Write,
-    time::{Duration, UNIX_EPOCH, SystemTime}
+    time::{UNIX_EPOCH, SystemTime}
 };
 use chrono::Local;
 use dirs::desktop_dir;
@@ -40,7 +40,6 @@ fn main() {
         }
         f /= 2;
     }
-    count = 0;
 
     let mut drive_letter =
         get_input("Выберите номер диска или букву диска (пример: С) для заполнения: ");
