@@ -130,12 +130,14 @@ fn main() {
 
     if let Err(_) = create_dir(file_path.clone()) {
         println!(
-            "Возможно, папка с файлами уже существует, пробуем удалить папку со всеми файлами..."
+            "Возможно, папка с файлами уже существует"
         );
-        if let Ok(_) = remove_dir_all(file_path.clone()) {
-            println!("Папка удалена, создаем новую...");
-            create_dir(file_path.clone()).unwrap();
-            println!("Папка создана")
+        if "+" == get_input("Будем удалять? (+ - если да): ").as_str() {
+            if let Ok(_) = remove_dir_all(file_path.clone()) {
+                println!("Папка удалена, создаем новую...");
+                create_dir(file_path.clone()).unwrap();
+                println!("Папка создана")
+            }
         }
     };
 
